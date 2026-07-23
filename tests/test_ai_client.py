@@ -102,3 +102,42 @@ def test_generation_failure_falls_back_safely_to_demo_mode():
     assert "demo" in response.lower()
     assert readiness["mode"] == "DEMO"
     assert readiness["live_ready"] is False
+
+
+def test_readiness_message_for_unreachable_ollama():
+    client = OllamaClient(selected_model="llama3.2")
+
+    with patch("src.ai_client.requests.get", side_effect=requests.RequestException("offline")):
+        readiness = client.get_readiness()
+
+    assert readiness["message"] == "Demo mode active: Ollama is not reachable."
+
+
+def test_readiness_message_for_no_installed_models():
+    client = OllamaClient(selected_model="llama3.2")
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse({"models": []})):
+        readiness = client.get_readiness()
+
+    assert readiness["message"] == "Demo mode active: Ollama is connected, but no models are installed."
+
+
+def test_readiness_message_for_missing_selected_model():
+    client = OllamaClient(selected_model="llama3.2")
+    payload = {"models": [{"name": "phi3"}]}
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse(payload)):
+        readiness = client.get_readiness()
+
+    assert readiness["message"] == "Demo mode active: The selected model is not installed."
+
+
+def test_readiness_message_for_live_mode():
+    client = OllamaClient(selected_model="llama3.2")
+    payload = {"models": [{"name": "llama3.2"}]}
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse(payload)):
+        with patch("src.ai_client.requests.post", return_value=DummyResponse({"response": "Live response"})):
+            readiness = client.get_readiness()
+
+    assert readiness["message"] == "Live mode active."

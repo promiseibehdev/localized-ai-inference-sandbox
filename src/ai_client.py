@@ -92,9 +92,17 @@ class OllamaClient:
         selected_model = self.selected_model
         model_available = selected_model in available_models
 
-        if not ollama_reachable or not model_available:
+        if not ollama_reachable:
             mode = "DEMO"
-            message = "Demo mode active: Ollama is unavailable or the selected model is not installed."
+            message = "Demo mode active: Ollama is not reachable."
+            live_ready = False
+        elif not available_models:
+            mode = "DEMO"
+            message = "Demo mode active: Ollama is connected, but no models are installed."
+            live_ready = False
+        elif not model_available:
+            mode = "DEMO"
+            message = "Demo mode active: The selected model is not installed."
             live_ready = False
         else:
             try:
@@ -112,10 +120,10 @@ class OllamaClient:
 
             if live_ready:
                 mode = "LIVE"
-                message = "Ollama is reachable and the selected model is available."
+                message = "Live mode active."
             else:
                 mode = "DEMO"
-                message = "Demo mode active: generation failed or the inference endpoint did not return a usable response."
+                message = "Demo mode active: The selected model is not installed."
 
         return {
             "ollama_reachable": ollama_reachable,
