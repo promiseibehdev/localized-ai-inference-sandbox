@@ -1,3 +1,4 @@
+# Runtime dependencies. Updating this manifest triggers a clean Community Cloud build.
 streamlit>=1.47.0,<2.0
 requests>=2.32.0,<3.0
 psutil>=6.0.0,<8.0

@@ -28,6 +28,7 @@ def test_demo_readiness_is_clear_and_requires_no_external_service():
     assert readiness.simulated is True
     assert readiness.mode == "SIMULATED"
     assert "no AI model or external API" in readiness.message
+    assert "Demo Provider Version: 2" in readiness.message
     assert readiness.available_models == ["simulated-portfolio-assistant"]
 
 

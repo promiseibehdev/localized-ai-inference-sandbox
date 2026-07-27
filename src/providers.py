@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 DEFAULT_PROVIDER = "demo"
 PROVIDER_ENV_VAR = "INFERENCE_PROVIDER"
 MAX_PROMPT_CHARACTERS = 2_000
+DEMO_PROVIDER_VERSION = 2
 SIMULATION_DISCLOSURE = "SIMULATED DEMO RESPONSE - No real AI model was used."
 
 DEMO_KNOWLEDGE_BASE = {
@@ -188,7 +189,8 @@ class DemoProvider:
             simulated=True,
             message=(
                 "Built-in Demo Mode is ready. Responses are simulated locally "
-                "by the application; no AI model or external API is being used."
+                "by the application; no AI model or external API is being used. "
+                f"Demo Provider Version: {DEMO_PROVIDER_VERSION}"
             ),
             available_models=self.list_models(),
             selected_model=self.selected_model,
