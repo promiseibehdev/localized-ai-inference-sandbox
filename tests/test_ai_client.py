@@ -1,6 +1,5 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import pytest
 import requests
 
 from src.ai_client import OllamaClient
@@ -140,4 +139,50 @@ def test_readiness_message_for_live_mode():
         with patch("src.ai_client.requests.post", return_value=DummyResponse({"response": "Live response"})):
             readiness = client.get_readiness()
 
-    assert readiness["message"] == "Live mode active."
+    assert readiness["message"] == "Live mode ready: Ollama is connected and the selected model is installed."
+
+
+def test_readiness_never_runs_inference():
+    client = OllamaClient(selected_model="llama3.2")
+    payload = {"models": [{"name": "llama3.2"}]}
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse(payload)):
+        with patch("src.ai_client.requests.post") as mocked_post:
+            readiness = client.get_readiness()
+
+    assert readiness["mode"] == "LIVE"
+    mocked_post.assert_not_called()
+
+
+def test_health_and_generation_use_separate_timeouts():
+    client = OllamaClient(
+        selected_model="llama3.2",
+        health_timeout_seconds=1.25,
+        generation_timeout_seconds=45.0,
+    )
+    payload = {"models": [{"name": "llama3.2"}]}
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse(payload)) as mocked_get:
+        with patch(
+            "src.ai_client.requests.post",
+            return_value=DummyResponse({"response": "Live response"}),
+        ) as mocked_post:
+            result = client.generate_result("hello")
+
+    assert result.mode == "LIVE"
+    assert mocked_get.call_args.kwargs["timeout"] == 1.25
+    assert mocked_post.call_args.kwargs["timeout"] == 45.0
+
+
+def test_generation_timeout_returns_accurate_simulated_result():
+    client = OllamaClient(selected_model="llama3.2")
+    payload = {"models": [{"name": "llama3.2"}]}
+
+    with patch("src.ai_client.requests.get", return_value=DummyResponse(payload)):
+        with patch("src.ai_client.requests.post", side_effect=requests.Timeout("slow")):
+            result = client.generate_result("hello")
+
+    assert result.mode == "DEMO"
+    assert result.simulated is True
+    assert result.error == "Ollama generation timed out."
+    assert "No real AI model was used" in result.text
