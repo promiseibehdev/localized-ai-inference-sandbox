@@ -8,6 +8,7 @@ from src.providers import (
     MAX_PROMPT_CHARACTERS,
     ProviderConfigurationError,
     ProviderFactory,
+    SIMULATION_DISCLOSURE,
     create_provider,
     resolve_provider_name,
 )
@@ -45,9 +46,50 @@ def test_demo_response_is_realistic_but_unambiguously_simulated():
 def test_demo_response_handles_general_prompts_without_claiming_inference():
     result = DemoProvider().generate("What could this portfolio demonstrate?")
 
-    assert "You asked about" in result.text
-    assert "real-provider configuration" in result.text
+    assert "limited built-in knowledge base" in result.text
+    assert "real configured AI provider" in result.text
     assert result.provider == "Built-in Demo"
+
+
+@pytest.mark.parametrize(
+    ("prompt", "expected"),
+    [
+        ("What is Docker?", "packages an application and its dependencies"),
+        ("Explain cloud computing", "provides servers, storage, databases"),
+    ],
+)
+def test_demo_answers_reviewed_common_topics(prompt, expected):
+    result = DemoProvider().generate(prompt)
+
+    assert expected in result.text
+    assert result.error is None
+
+
+def test_demo_supports_a_conservative_spelling_variation():
+    result = DemoProvider().generate("Tell me about Dockre")
+
+    assert "Docker packages an application" in result.text
+
+
+def test_demo_uses_honest_fallback_for_unknown_topics():
+    result = DemoProvider().generate("What is quantum biology?")
+
+    assert "limited built-in knowledge base" in result.text
+    assert "does not have a prepared answer" in result.text
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "What is Docker?",
+        "Explain cloud computing",
+        "What is an unsupported subject?",
+    ],
+)
+def test_every_demo_answer_has_the_exact_simulation_disclosure(prompt):
+    result = DemoProvider().generate(prompt)
+
+    assert result.text.startswith(SIMULATION_DISCLOSURE)
 
 
 def test_demo_rejects_empty_prompts_cleanly():

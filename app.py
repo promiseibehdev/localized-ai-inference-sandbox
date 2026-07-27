@@ -26,6 +26,14 @@ PROVIDER_SETTING_KEYS = {
 }
 
 
+def format_response_time(elapsed_seconds: float) -> str:
+    """Format fast responses precisely without displaying a misleading 0.00s."""
+
+    if elapsed_seconds < 1:
+        return f"{elapsed_seconds * 1_000:.0f} ms"
+    return f"{elapsed_seconds:.2f}s"
+
+
 def load_provider_settings() -> Dict[str, Any]:
     """Load deployment secrets without requiring a secrets file to exist."""
     settings: Dict[str, Any] = {}
@@ -121,7 +129,9 @@ def main() -> None:
                 if item.get("provider"):
                     meta.append(f"Provider: {item['provider']}")
                 if "response_time" in item:
-                    meta.append(f"Response time: {item['response_time']:.2f}s")
+                    meta.append(
+                        f"Response time: {format_response_time(item['response_time'])}"
+                    )
                 with st.chat_message("assistant"):
                     if item.get("simulated"):
                         st.warning("Simulated output - no real AI model was used.")

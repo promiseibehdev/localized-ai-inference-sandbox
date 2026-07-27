@@ -135,3 +135,12 @@ def test_prompt_submission_uses_demo_provider_without_widget_state_error():
 
     assert not app_test.exception
     assert any("SIMULATED DEMO RESPONSE" in item.value for item in app_test.markdown)
+
+
+def test_response_time_uses_milliseconds_below_one_second():
+    assert app.format_response_time(0.1234) == "123 ms"
+    assert app.format_response_time(0.0004) == "0 ms"
+
+
+def test_response_time_uses_seconds_at_or_above_one_second():
+    assert app.format_response_time(1.234) == "1.23s"
